@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Workforce Retention Dashboard — Chief of Staff View</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:        #0D1117;
+    --panel:     #161B22;
+    --panel2:    #1C2128;
+    --border:    #30363D;
+    --text:      #E6EDF3;
+    --muted:     #8B949E;
+    --accent:    #2563EB;
+    --accent2:   #1D4ED8;
+    --red:       #EF4444;
+    --red-dim:   #7F1D1D;
+    --amber:     #F59E0B;
+    --amber-dim: #78350F;
+    --green:     #10B981;
+    --green-dim: #064E3B;
+    --blue:      #3B82F6;
+    --purple:    #8B5CF6;
+    --teal:      #14B8A6;
+    --orange:    #F97316;
+    --grid:      rgba(48,54,61,0.5);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #0F172A 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo { width: 38px; height: 38px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .header-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-sub { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-live { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+  .badge-date { background: rgba(37,99,235,0.15); color: var(--blue); border: 1px solid rgba(37,99,235,0.3); }
+
+  /* ── SECTION LABELS ── */
+  .section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--muted); padding: 14px 28px 6px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── KPI ROW ── */
+  .kpi-row { display: flex; gap: 12px; padding: 8px 28px 0; }
+  .kpi-card {
+    flex: 1; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px; position: relative; overflow: hidden;
+    cursor: pointer; transition: all 0.2s ease;
+  }
+  .kpi-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .kpi-card.active { border-color: var(--red); box-shadow: 0 0 0 1px var(--red); }
+  .kpi-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .kpi-value { font-size: 28px; font-weight: 800; line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
+  .kpi-delta { font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px; margin-top: 4px; }
+  .kpi-delta.up { color: var(--red); }
+  .kpi-delta.down { color: var(--green); }
+  .kpi-glow { position: absolute; top: 0; right: 0; width: 60px; height: 60px; border-radius: 0 10px 0 60px; opacity: 0.15; }
+  .kpi-card:nth-child(1) .kpi-value { color: var(--blue); }
+  .kpi-card:nth-child(1) .kpi-glow { background: var(--blue); }
+  .kpi-card:nth-child(2) .kpi-value { color: var(--red); }
+  .kpi-card:nth-child(2) .kpi-glow { background: var(--red); }
+  .kpi-card:nth-child(3) .kpi-value { color: var(--amber); }
+  .kpi-card:nth-child(3) .kpi-glow { background: var(--amber); }
+  .kpi-card:nth-child(4) .kpi-value { color: var(--purple); }
+  .kpi-card:nth-child(4) .kpi-glow { background: var(--purple); }
+  .kpi-card:nth-child(5) .kpi-value { color: var(--green); }
+  .kpi-card:nth-child(5) .kpi-glow { background: var(--green); }
+  .kpi-card:nth-child(6) .kpi-value { color: var(--teal); }
+  .kpi-card:nth-child(6) .kpi-glow { background: var(--teal); }
+
+  /* ── MAIN GRID ── */
+  .main-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 8px 28px; }
+  .main-grid-wide { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; padding: 0 28px 8px; }
+  .main-grid-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 0 28px 14px; }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px; position: relative; overflow: hidden;
+  }
+  .panel-title {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.3px; color: var(--text);
+    margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-desc { font-size: 10px; color: var(--muted); margin-bottom: 14px; }
+  .panel canvas { max-width: 100%; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    display: flex; gap: 8px; padding: 6px 28px 10px; align-items: center; flex-wrap: wrap;
+  }
+  .filter-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+  .filter-btn {
+    padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--panel2); color: var(--text); font-size: 11px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--blue); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .filter-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+  /* ── BURNOUT ALERT CARD ── */
+  .burnout-card {
+    background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.05));
+    border: 1px solid rgba(239,68,68,0.4);
+    border-radius: 10px; padding: 18px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .burnout-card:hover { border-color: var(--red); box-shadow: 0 0 20px rgba(239,68,68,0.2); }
+  .burnout-card.active { border-color: var(--red); box-shadow: 0 0 0 2px rgba(239,68,68,0.3); }
+
+  /* ── TABLE ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .data-table th { text-align: left; padding: 6px 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.5px; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  .data-table td { padding: 7px 10px; border-bottom: 1px solid rgba(48,54,61,0.5); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(37,99,235,0.05); }
+  .pill { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; display: inline-block; }
+  .pill-red    { background: rgba(239,68,68,0.15);  color: var(--red);  border: 1px solid rgba(239,68,68,0.3); }
+  .pill-amber  { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+  .pill-green  { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+  .pill-blue   { background: rgba(59,130,246,0.15); color: var(--blue);  border: 1px solid rgba(59,130,246,0.3); }
+  .pill-purple { background: rgba(139,92,246,0.15); color: var(--purple); border: 1px solid rgba(139,92,246,0.3); }
+
+  /* ── SPARKLINE ── */
+  .spark { height: 36px; display: flex; align-items: flex-end; gap: 3px; }
+  .spark-bar { flex: 1; border-radius: 2px 2px 0 0; background: var(--accent); opacity: 0.7; transition: opacity 0.2s; }
+  .spark-bar:hover { opacity: 1; }
+
+  /* ── STORY ANNOTATION ── */
+  .story-strip {
+    display: flex; gap: 0; padding: 0 28px 10px;
+  }
+  .story-step {
+    flex: 1; background: var(--panel); border: 1px solid var(--border);
+    padding: 12px 16px; position: relative;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .story-step:first-child { border-radius: 8px 0 0 8px; }
+  .story-step:last-child  { border-radius: 0 8px 8px 0; }
+  .story-num { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+  .story-q   { font-size: 12px; font-weight: 700; }
+  .story-a   { font-size: 10px; color: var(--muted); line-height: 1.5; }
+  .story-arrow { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); z-index: 2; font-size: 20px; color: var(--muted); }
+
+  /* ── TOOLTIP ── */
+  .tooltip-box {
+    display: none; position: absolute; background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; font-size: 11px; z-index: 100;
+    pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    max-width: 220px; white-space: nowrap;
+  }
+  .tooltip-title { font-weight: 700; margin-bottom: 4px; }
+  .tooltip-row   { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); }
+  .tooltip-val   { color: var(--text); font-weight: 600; }
+
+  /* ── INSIGHT BOX ── */
+  .insight {
+    background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.25);
+    border-radius: 6px; padding: 10px 14px; margin-top: 12px;
+    font-size: 11px; line-height: 1.6; color: #93C5FD;
+  }
+  .insight b { color: var(--blue); }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .legend-dot  { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ── RISK GAUGE ── */
+  .gauge-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .gauge-item { flex: 1; }
+  .gauge-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .gauge-track { height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
+  .gauge-fill  { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+
+  /* ── FOCUS PANEL (shown when burnout card clicked) ── */
+  .focus-panel {
+    display: none; background: var(--panel2); border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px; padding: 18px; margin: 0 28px 8px;
+  }
+  .focus-panel.visible { display: block; }
+  .focus-title { font-size: 13px; font-weight: 700; color: var(--red); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .focus-grid  { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+  .focus-role  { background: var(--panel); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 10px 12px; }
+  .focus-role-name { font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+  .focus-role-stat { font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; margin-top: 2px; }
+  .focus-role-stat span { color: var(--text); font-weight: 600; }
+
+  .stat-mini { font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(48,54,61,0.4); }
+  .stat-mini:last-child { border-bottom: none; }
+  .stat-mini b { color: var(--text); }
+
+  canvas { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══════════════════════════════════════════════ -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">📊</div>
+    <div>
+      <div class="header-title">Workforce Retention Analytics — Chief of Staff Dashboard</div>
+      <div class="header-sub">IBM HR Dataset · 1,470 employees · Pipeline: CSV → Excel → SQL → Power BI</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="badge badge-live">● LIVE DATA</span>
+    <span class="badge badge-date">FY 2025–2026</span>
+  </div>
+</div>
+
+<!-- ══ NARRATIVE STORY STRIP ═══════════════════════════════ -->
+<div style="padding: 10px 28px 0;">
+  <div class="story-strip">
+    <div class="story-step">
+      <div class="story-num">01 — WHAT IS HAPPENING?</div>
+      <div class="story-q">A serious attrition crisis</div>
+      <div class="story-a">26.5% of our workforce left — nearly double industry benchmarks. Sales is worst at 28.8%, with 389 employees lost this period.</div>
+      <div class="story-arrow">›</div>
+    </div>
+    <div class="story-step">
+      <div class="story-num">02 — WHY IS IT HAPPENING?</div>
+      <div class="story-q">Burnout, pay gaps & overtime</div>
+      <div class="story-a">120 employees are at High/Critical burnout risk. 27% work overtime with attrition jumping to 36.2% for that group vs 22.8% for others.</div>
+      <div class="story-arrow">›</div>
+    </div>
+    <div class="story-step">
+      <div class="story-num">03 — WHO IS IT AFFECTING?</div>
+      <div class="story-q">Lab Techs & Sales Reps first</div>
+      <div class="story-a">Healthcare Reps (30.6%), Sales Reps (29.7%), Lab Technicians (29.3%) are the highest-risk roles. 455 employees are underpaid vs role average.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ KPI ROW ══════════════════════════════════════════════ -->
+<div class="section-label">KEY PERFORMANCE INDICATORS</div>
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="kpi-glow"></div>
+    <div class="kpi-label">Total Employees</div>
+    <div class="kpi-value">1,470</div>
+    <div class="kpi-sub">Active workforce</div>
+    <div class="kpi-delta down">↓ 389 left this period</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-glow"></div>
+    <div class="kpi-label">Attrition Rate</div>
+    <div class="kpi-value">26.5%</div>
+    <div class="kpi-sub">Company-wide</div>
+    <div class="kpi-delta up">▲ +10pts vs industry avg</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-glow"></div>
+    <div class="kpi-label">High Burnout Risk</div>
+    <div class="kpi-value">120</div>
+    <div class="kpi-sub">Employees flagged</div>
+    <div class="kpi-delta up">▲ Requires immediate action</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-glow"></div>
+    <div class="kpi-label">Underpaid Staff</div>
+    <div class="kpi-value">455</div>
+    <div class="kpi-sub">&gt;10% below role avg</div>
+    <div class="kpi-delta up">▲ 31% of workforce</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-glow"></div>
+    <div class="kpi-label">Avg Monthly Income</div>
+    <div class="kpi-value">$6,523</div>
+    <div class="kpi-sub">Across all roles</div>
+    <div class="kpi-delta down">↓ Wide role variance</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-glow"></div>
+    <div class="kpi-label">Avg Tenure</div>
+    <div class="kpi-value">6.5 yrs</div>
+    <div class="kpi-sub">At company</div>
+    <div class="kpi-delta up">▲ Early tenure: highest churn</div>
+  </div>
+</div>
+
+<!-- ══ FILTER BAR ═══════════════════════════════════════════ -->
+<div class="filter-bar" style="margin-top:10px;">
+  <span class="filter-label">Filter by Department:</span>
+  <button class="filter-btn active" onclick="filterDept('All')">All Departments</button>
+  <button class="filter-btn" onclick="filterDept('Sales')">Sales</button>
+  <button class="filter-btn" onclick="filterDept('R&D')">Research & Development</button>
+  <button class="filter-btn" onclick="filterDept('HR')">Human Resources</button>
+  <div class="filter-sep"></div>
+  <span class="filter-label">Burnout Filter:</span>
+  <button class="filter-btn" onclick="filterBurnout('All')">All Risk Levels</button>
+  <button class="filter-btn" onclick="filterBurnout('High')">High + Critical</button>
+  <button class="filter-btn" onclick="filterBurnout('Moderate')">Moderate Risk</button>
+</div>
+
+<!-- ══ BURNOUT ALERT — INTERACTIVE CROSS-FILTER ════════════ -->
+<div style="padding: 0 28px 6px; display: flex; gap: 12px;">
+  <div class="burnout-card" id="burnoutCard" onclick="toggleBurnoutFocus()" style="flex:1;">
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <div>
+        <div style="font-size:11px; font-weight:700; color:var(--red); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">🔥 HIGH BURNOUT RISK ALERT — Click to drill down</div>
+        <div style="font-size:22px; font-weight:800; color:var(--red);">120 employees</div>
+        <div style="font-size:11px; color:var(--muted); margin-top:4px;">require immediate HR intervention (Score ≥ 10/18)</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:32px; font-weight:800; color:rgba(239,68,68,0.3);">!</div>
+        <div style="font-size:10px; color:var(--muted);">44.8% attrition rate<br>in High Risk group</div>
+      </div>
+    </div>
+    <div style="margin-top:12px; display:flex; gap:16px;">
+      <div><div style="font-size:10px;color:var(--muted);">Critical (≥14)</div><div style="font-size:16px;font-weight:800;color:var(--red);">3</div></div>
+      <div><div style="font-size:10px;color:var(--muted);">High (10–13)</div><div style="font-size:16px;font-weight:800;color:var(--orange);">117</div></div>
+      <div><div style="font-size:10px;color:var(--muted);">Moderate (6–9)</div><div style="font-size:16px;font-weight:800;color:var(--amber);">672</div></div>
+      <div><div style="font-size:10px;color:var(--muted);">Low Risk (0–5)</div><div style="font-size:16px;font-weight:800;color:var(--green);">678</div></div>
+    </div>
+  </div>
+  <div class="panel" style="flex:0.4; padding:16px;">
+    <div class="panel-title">Overtime Impact</div>
+    <div class="panel-desc">Attrition rate by overtime status</div>
+    <canvas id="overtimeChart" height="90"></canvas>
+    <div class="insight" style="margin-top:8px;">Overtime workers leave at <b>36.2%</b> vs 22.8% for non-overtime — a <b>59% higher risk</b></div>
+  </div>
+</div>
+
+<!-- ══ BURNOUT DRILL-DOWN (interactive cross-filter) ════════ -->
+<div class="focus-panel" id="focusPanel">
+  <div class="focus-title">🎯 HIGH BURNOUT RISK — Job Roles Requiring Immediate Attention</div>
+  <div class="focus-grid" id="focusGrid"></div>
+</div>
+
+<!-- ══ ROW 1: MAIN CHARTS ════════════════════════════════════ -->
+<div class="section-label">WHAT IS HAPPENING? — Attrition Overview</div>
+<div class="main-grid">
+  <!-- Diverging Bar Chart — Dept Attrition -->
+  <div class="panel">
+    <div class="panel-title">
+      Department Attrition vs. Company Average (26.5%)
+      <span style="font-size:10px;color:var(--muted);font-weight:400;">Diverging Bar</span>
+    </div>
+    <div class="panel-desc">Bars show deviation from company-wide rate. Red = above average, green = below.</div>
+    <canvas id="divergingBar" height="160"></canvas>
+    <div class="insight"><b>Sales is 2.4pts above company average.</b> HR is performing best at 6pts below avg. Prioritize Sales retention programs.</div>
+  </div>
+
+  <!-- Attrition by Job Role -->
+  <div class="panel">
+    <div class="panel-title">Attrition Rate by Job Role
+      <span style="font-size:10px;color:var(--muted);font-weight:400;">Horizontal Bar</span>
+    </div>
+    <div class="panel-desc">Sorted by attrition rate. Average line at 26.5%.</div>
+    <canvas id="roleAttrition" height="160"></canvas>
+  </div>
+
+  <!-- Tenure vs Attrition -->
+  <div class="panel">
+    <div class="panel-title">Attrition by Tenure Cohort
+      <span style="font-size:10px;color:var(--muted);font-weight:400;">Bar</span>
+    </div>
+    <div class="panel-desc">When in their career are employees most likely to leave?</div>
+    <canvas id="tenureChart" height="160"></canvas>
+    <div class="insight"><b>Early Tenure (1–3 yrs) is the danger zone</b> at 30.3%. New hires also high at 29.9% — onboarding needs work.</div>
+  </div>
+</div>
+
+<!-- ══ ROW 2: WHY IS IT HAPPENING ════════════════════════════ -->
+<div class="section-label">WHY IS IT HAPPENING? — Burnout & Pay Analysis</div>
+<div class="main-grid-wide">
+  <!-- Scatter Plot: Years at Company vs Income, colored by Burnout -->
+  <div class="panel">
+    <div class="panel-title">
+      Tenure × Income × Burnout Profile — Scatter Matrix
+      <span style="font-size:10px;color:var(--muted);font-weight:400;">Scatter Plot</span>
+    </div>
+    <div class="panel-desc">X = Years at Company · Y = Monthly Income · Color = Burnout Risk Profile · Shape = Attrition status</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Low Risk</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Moderate Risk</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>High Risk</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Critical Risk</div>
+      <div class="legend-item" style="margin-left:8px;"><span style="font-size:13px;">●</span> Stayed</div>
+      <div class="legend-item"><span style="font-size:13px;">✕</span> Left</div>
+    </div>
+    <canvas id="scatterPlot" height="220"></canvas>
+    <div class="insight"><b>Pattern:</b> High burnout employees (orange/red) cluster in the <b>low income + early tenure</b> quadrant. These are the most at-risk group for imminent attrition.</div>
+  </div>
+
+  <!-- Burnout Score by Role (horizontal bars) -->
+  <div class="panel">
+    <div class="panel-title">Avg Burnout Score by Role
+      <span style="font-size:10px;color:var(--muted);font-weight:400;">Ranked</span>
+    </div>
+    <div class="panel-desc">Composite index: overtime + WLB + satisfaction + pay + travel + promotion</div>
+    <div id="burnoutGauges" style="margin-top:8px;"></div>
+    <div class="insight"><b>Lab Technicians & Healthcare Reps</b> have the highest burnout scores (6.2+) and both sit above 29% attrition — the most urgent intervention targets.</div>
+  </div>
+</div>
+
+<!-- ══ ROW 3: WHO IS AFFECTED ════════════════════════════════ -->
+<div class="section-label">WHO IS IT AFFECTING? — Role & Pay Deep Dive</div>
+<div class="main-grid-3col">
+
+  <!-- Monthly Attrition Trend -->
+  <div class="panel">
+    <div class="panel-title">Monthly Attrition Events (Simulated FY Trend)
+      <span style="font-size:10px;color:var(--muted);font-weight:400;">Line</span>
+    </div>
+    <div class="panel-desc">Volume of departures by month — identifies seasonal patterns</div>
+    <canvas id="monthlyTrend" height="130"></canvas>
+  </div>
+
+  <!-- Pay Gap Heatmap -->
+  <div class="panel">
+    <div class="panel-title">Pay Gap Analysis by Role
+      <span style="font-size:10px;color:var(--muted);font-weight:400;">Bar</span>
+    </div>
+    <div class="panel-desc">% of employees underpaid (&gt;10% below role average salary)</div>
+    <canvas id="payGapChart" height="130"></canvas>
+  </div>
+
+  <!-- Priority Action Table -->
+  <div class="panel">
+    <div class="panel-title">🚨 Priority Intervention Table</div>
+    <div class="panel-desc">Roles ranked by combined attrition + burnout risk score</div>
+    <table class="data-table" id="priorityTable">
+      <thead>
+        <tr>
+          <th>Job Role</th>
+          <th>Attrition</th>
+          <th>Avg Burnout</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="priorityBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ BURNOUT COMPONENT BREAKDOWN ══════════════════════════ -->
+<div class="section-label">BURNOUT INDEX — Component Analysis (SQL CASE WHEN Logic)</div>
+<div style="padding: 0 28px 16px; display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+  <div class="panel">
+    <div class="panel-title">Burnout Score Components — What's Driving It?</div>
+    <div class="panel-desc">7-factor composite score breakdown. Max score = 18 pts. Score ≥10 = High Risk.</div>
+    <canvas id="burnoutComponents" height="160"></canvas>
+  </div>
+  <div class="panel">
+    <div class="panel-title">SQL Architecture — How the Burnout Index Works</div>
+    <div class="panel-desc">CASE WHEN logic translated to visual spec</div>
+    <div style="font-family:'JetBrains Mono',monospace; font-size:10px; line-height:1.8; color:var(--muted); overflow:auto;">
+      <div style="margin-bottom:8px; padding:10px; background:var(--panel2); border-radius:6px; border:1px solid var(--border);">
+        <div style="color:var(--blue); font-weight:700; margin-bottom:6px;">-- Burnout Index SQL (Simplified)</div>
+        <div><span style="color:var(--purple);">CASE WHEN</span> overtime = <span style="color:var(--green);">'Yes'</span> <span style="color:var(--purple);">THEN</span> <span style="color:var(--amber);">3</span> <span style="color:var(--muted);">-- max weight</span></div>
+        <div><span style="color:var(--purple);">  + </span>(4 - work_life_balance) <span style="color:var(--muted);">-- 0-3 pts</span></div>
+        <div><span style="color:var(--purple);">  + </span>(4 - job_satisfaction)  <span style="color:var(--muted);">-- 0-3 pts</span></div>
+        <div><span style="color:var(--purple);">  + </span>(4 - env_satisfaction)  <span style="color:var(--muted);">-- 0-3 pts</span></div>
+        <div><span style="color:var(--purple);">  +</span> promotion_stagnation   <span style="color:var(--muted);">-- 0-2 pts</span></div>
+        <div><span style="color:var(--purple);">  +</span> pay_gap_score          <span style="color:var(--muted);">-- 0-2 pts</span></div>
+        <div><span style="color:var(--purple);">  +</span> business_travel        <span style="color:var(--muted);">-- 0-2 pts</span></div>
+        <div><span style="color:var(--purple);">  +</span> low_involvement        <span style="color:var(--muted);">-- 0-1 pt</span></div>
+        <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--border); color:var(--text);">
+          Total Max = <span style="color:var(--amber);font-weight:700;">18 points</span>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
+        <div style="padding:8px; background:var(--green-dim); border-radius:6px; border:1px solid var(--green);">
+          <div style="color:var(--green);font-weight:700;font-size:10px;">LOW RISK</div>
+          <div style="color:var(--text);font-size:12px;font-weight:700;">0 – 5</div>
+          <div style="color:var(--muted);font-size:10px;">678 employees</div>
+        </div>
+        <div style="padding:8px; background:var(--amber-dim); border-radius:6px; border:1px solid var(--amber);">
+          <div style="color:var(--amber);font-weight:700;font-size:10px;">MODERATE</div>
+          <div style="color:var(--text);font-size:12px;font-weight:700;">6 – 9</div>
+          <div style="color:var(--muted);font-size:10px;">672 employees</div>
+        </div>
+        <div style="padding:8px; background:rgba(249,115,22,0.15); border-radius:6px; border:1px solid var(--orange);">
+          <div style="color:var(--orange);font-weight:700;font-size:10px;">HIGH RISK</div>
+          <div style="color:var(--text);font-size:12px;font-weight:700;">10 – 13</div>
+          <div style="color:var(--muted);font-size:10px;">117 employees</div>
+        </div>
+        <div style="padding:8px; background:var(--red-dim); border-radius:6px; border:1px solid var(--red);">
+          <div style="color:var(--red);font-weight:700;font-size:10px;">CRITICAL</div>
+          <div style="color:var(--text);font-size:12px;font-weight:700;">14+</div>
+          <div style="color:var(--muted);font-size:10px;">3 employees</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip" class="tooltip-box"></div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────
+const DATA = {
+  kpis: {total_employees:1470,attrition_rate:26.5,attrited_count:389,high_critical_burnout:120,underpaid_count:455,overtime_pct:27.3,avg_income:6523,avg_tenure:6.5,company_avg_attrition:26.5},
+  dept_attrition: [
+    {Department:"Human Resources",AttritionRate:20.4,Deviation:-6.1},
+    {Department:"Research & Development",AttritionRate:26.5,Deviation:0.0},
+    {Department:"Sales",AttritionRate:28.8,Deviation:2.4}
+  ],
+  role_attrition: [
+    {JobRole:"Healthcare Rep",AttritionRate:30.6,AvgBurnout:6.16,AvgIncome:4840},
+    {JobRole:"Sales Rep",AttritionRate:29.7,AvgBurnout:6.13,AvgIncome:3409},
+    {JobRole:"Lab Technician",AttritionRate:29.3,AvgBurnout:6.25,AvgIncome:3203},
+    {JobRole:"Research Scientist",AttritionRate:29.1,AvgBurnout:5.83,AvgIncome:5453},
+    {JobRole:"Mfg Director",AttritionRate:28.4,AvgBurnout:5.93,AvgIncome:9800},
+    {JobRole:"Manager",AttritionRate:26.9,AvgBurnout:5.89,AvgIncome:9040},
+    {JobRole:"Sales Executive",AttritionRate:26.4,AvgBurnout:5.91,AvgIncome:5871},
+    {JobRole:"Human Resources",AttritionRate:20.0,AvgBurnout:6.00,AvgIncome:3938},
+    {JobRole:"Research Director",AttritionRate:16.4,AvgBurnout:5.46,AvgIncome:10791}
+  ],
+  burnout_by_role: [
+    {JobRole:"Lab Technician",AvgBurnout:6.25,CriticalCount:17,AttritionRate:29.3},
+    {JobRole:"Healthcare Rep",AvgBurnout:6.16,CriticalCount:10,AttritionRate:30.6},
+    {JobRole:"Sales Rep",AvgBurnout:6.13,CriticalCount:15,AttritionRate:29.7},
+    {JobRole:"Human Resources",AvgBurnout:6.00,CriticalCount:9,AttritionRate:20.0},
+    {JobRole:"Mfg Director",AvgBurnout:5.93,CriticalCount:10,AttritionRate:28.4},
+    {JobRole:"Sales Executive",AvgBurnout:5.91,CriticalCount:14,AttritionRate:26.4},
+    {JobRole:"Manager",AvgBurnout:5.89,CriticalCount:24,AttritionRate:26.9},
+    {JobRole:"Research Scientist",AvgBurnout:5.83,CriticalCount:9,AttritionRate:29.1},
+    {JobRole:"Research Director",AvgBurnout:5.46,CriticalCount:12,AttritionRate:16.4}
+  ],
+  tenure_attrition: [
+    {label:"New Hire\n(<1 yr)",val:29.9},
+    {label:"Early\n(1-3 yrs)",val:30.3},
+    {label:"Established\n(3-7 yrs)",val:22.4},
+    {label:"Senior\n(7-15 yrs)",val:25.0},
+    {label:"Veteran\n(15+ yrs)",val:23.5}
+  ],
+  monthly_attrition: {Jan:21,Feb:10,Mar:10,Apr:14,May:18,Jun:9,Jul:8,Aug:23,Sep:17,Oct:8,Nov:22,Dec:8},
+  pay_by_role: [
+    {JobRole:"Mfg Director",UnderpaidPct:34.0},
+    {JobRole:"Lab Technician",UnderpaidPct:33.3},
+    {JobRole:"Sales Rep",UnderpaidPct:31.9},
+    {JobRole:"Healthcare Rep",UnderpaidPct:31.9},
+    {JobRole:"Research Director",UnderpaidPct:31.6},
+    {JobRole:"Sales Executive",UnderpaidPct:30.7},
+    {JobRole:"Human Resources",UnderpaidPct:30.5},
+    {JobRole:"Research Scientist",UnderpaidPct:29.1},
+    {JobRole:"Manager",UnderpaidPct:27.7}
+  ],
+  scatter: [
+    {yrs:0,inc:10140,bp:"Low Risk",att:"No"},{yrs:1,inc:10242,bp:"Low Risk",att:"No"},
+    {yrs:5,inc:3629,bp:"Moderate Risk",att:"No"},{yrs:9,inc:10918,bp:"Low Risk",att:"Yes"},
+    {yrs:2,inc:6453,bp:"Low Risk",att:"No"},{yrs:28,inc:3912,bp:"Moderate Risk",att:"No"},
+    {yrs:0,inc:7388,bp:"Moderate Risk",att:"Yes"},{yrs:2,inc:11901,bp:"Moderate Risk",att:"Yes"},
+    {yrs:5,inc:9097,bp:"Low Risk",att:"No"},{yrs:15,inc:5009,bp:"Moderate Risk",att:"No"},
+    {yrs:11,inc:3514,bp:"Moderate Risk",att:"Yes"},{yrs:23,inc:10017,bp:"Low Risk",att:"No"},
+    {yrs:1,inc:10378,bp:"Low Risk",att:"No"},{yrs:16,inc:3415,bp:"Moderate Risk",att:"Yes"},
+    {yrs:2,inc:12720,bp:"Moderate Risk",att:"No"},{yrs:4,inc:3121,bp:"Low Risk",att:"No"},
+    {yrs:14,inc:4505,bp:"Moderate Risk",att:"No"},{yrs:1,inc:4811,bp:"Moderate Risk",att:"Yes"},
+    {yrs:7,inc:5058,bp:"Moderate Risk",att:"No"},{yrs:0,inc:5092,bp:"Low Risk",att:"Yes"},
+    {yrs:0,inc:11029,bp:"Moderate Risk",att:"No"},{yrs:2,inc:4330,bp:"Moderate Risk",att:"No"},
+    {yrs:3,inc:3414,bp:"Low Risk",att:"No"},{yrs:2,inc:3862,bp:"Low Risk",att:"Yes"},
+    {yrs:0,inc:9944,bp:"Low Risk",att:"Yes"},{yrs:15,inc:6076,bp:"Moderate Risk",att:"No"},
+    {yrs:3,inc:4424,bp:"Moderate Risk",att:"Yes"},{yrs:0,inc:2716,bp:"Moderate Risk",att:"No"},
+    {yrs:0,inc:7983,bp:"Moderate Risk",att:"No"},{yrs:6,inc:14649,bp:"Moderate Risk",att:"No"},
+    {yrs:3,inc:11633,bp:"Low Risk",att:"No"},{yrs:2,inc:5116,bp:"Low Risk",att:"Yes"},
+    {yrs:21,inc:3078,bp:"Low Risk",att:"No"},{yrs:10,inc:3983,bp:"Low Risk",att:"No"},
+    {yrs:2,inc:3502,bp:"Low Risk",att:"No"},{yrs:12,inc:4861,bp:"Moderate Risk",att:"Yes"},
+    {yrs:0,inc:10533,bp:"Moderate Risk",att:"Yes"},{yrs:3,inc:5976,bp:"Moderate Risk",att:"No"},
+    {yrs:1,inc:1989,bp:"Moderate Risk",att:"No"},{yrs:20,inc:9682,bp:"Moderate Risk",att:"No"},
+    {yrs:2,inc:3088,bp:"Low Risk",att:"Yes"},{yrs:15,inc:11643,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:6178,bp:"Low Risk",att:"No"},{yrs:9,inc:7896,bp:"Moderate Risk",att:"No"},
+    {yrs:4,inc:5317,bp:"Low Risk",att:"Yes"},{yrs:2,inc:9314,bp:"Low Risk",att:"No"},
+    {yrs:8,inc:15049,bp:"Low Risk",att:"No"},{yrs:3,inc:5145,bp:"Moderate Risk",att:"No"},
+    {yrs:2,inc:3859,bp:"Moderate Risk",att:"No"},{yrs:2,inc:4040,bp:"Low Risk",att:"Yes"},
+    {yrs:16,inc:3391,bp:"Low Risk",att:"No"},{yrs:3,inc:9969,bp:"Low Risk",att:"No"},
+    {yrs:19,inc:10048,bp:"Moderate Risk",att:"No"},{yrs:0,inc:10116,bp:"Moderate Risk",att:"Yes"},
+    {yrs:5,inc:9954,bp:"Low Risk",att:"No"},{yrs:12,inc:10442,bp:"Moderate Risk",att:"No"},
+    {yrs:4,inc:3561,bp:"Low Risk",att:"No"},{yrs:13,inc:1616,bp:"Moderate Risk",att:"No"},
+    {yrs:14,inc:7681,bp:"Moderate Risk",att:"No"},{yrs:7,inc:8711,bp:"High Risk",att:"No"},
+    {yrs:7,inc:4520,bp:"Moderate Risk",att:"No"},{yrs:6,inc:4457,bp:"Moderate Risk",att:"No"},
+    {yrs:13,inc:5016,bp:"Low Risk",att:"No"},{yrs:3,inc:2727,bp:"High Risk",att:"Yes"},
+    {yrs:0,inc:5835,bp:"Moderate Risk",att:"Yes"},{yrs:1,inc:4339,bp:"High Risk",att:"Yes"},
+    {yrs:5,inc:3469,bp:"Low Risk",att:"No"},{yrs:2,inc:5270,bp:"Low Risk",att:"Yes"},
+    {yrs:12,inc:6667,bp:"Low Risk",att:"No"},{yrs:2,inc:11846,bp:"Low Risk",att:"No"},
+    {yrs:1,inc:10182,bp:"Moderate Risk",att:"No"},{yrs:0,inc:8198,bp:"Low Risk",att:"No"},
+    {yrs:15,inc:10090,bp:"High Risk",att:"Yes"},{yrs:7,inc:11710,bp:"Moderate Risk",att:"Yes"},
+    {yrs:22,inc:9475,bp:"Moderate Risk",att:"No"},{yrs:1,inc:3657,bp:"Low Risk",att:"No"},
+    {yrs:11,inc:3585,bp:"Low Risk",att:"No"},{yrs:7,inc:3952,bp:"Moderate Risk",att:"Yes"},
+    {yrs:0,inc:3410,bp:"Low Risk",att:"No"},{yrs:9,inc:5558,bp:"Moderate Risk",att:"No"},
+    {yrs:1,inc:5307,bp:"Moderate Risk",att:"No"},{yrs:2,inc:7570,bp:"Moderate Risk",att:"No"},
+    {yrs:9,inc:2639,bp:"Low Risk",att:"No"},{yrs:5,inc:9983,bp:"Low Risk",att:"No"},
+    {yrs:1,inc:9999,bp:"Low Risk",att:"No"},{yrs:7,inc:11371,bp:"Low Risk",att:"Yes"},
+    {yrs:0,inc:1780,bp:"High Risk",att:"Yes"},{yrs:21,inc:6317,bp:"Moderate Risk",att:"No"},
+    {yrs:5,inc:6027,bp:"High Risk",att:"Yes"},{yrs:33,inc:3925,bp:"Low Risk",att:"No"},
+    {yrs:15,inc:6131,bp:"Moderate Risk",att:"No"},{yrs:11,inc:3076,bp:"Moderate Risk",att:"Yes"},
+    {yrs:5,inc:4563,bp:"High Risk",att:"No"},{yrs:7,inc:9491,bp:"Low Risk",att:"No"},
+    {yrs:1,inc:5282,bp:"Moderate Risk",att:"No"},{yrs:32,inc:12429,bp:"Low Risk",att:"No"},
+    {yrs:4,inc:8945,bp:"Moderate Risk",att:"No"},{yrs:0,inc:1781,bp:"Moderate Risk",att:"Yes"},
+    {yrs:1,inc:11950,bp:"Low Risk",att:"No"},{yrs:6,inc:3046,bp:"Low Risk",att:"No"},
+    {yrs:12,inc:8870,bp:"Moderate Risk",att:"No"},{yrs:2,inc:10702,bp:"Low Risk",att:"Yes"},
+    {yrs:3,inc:3532,bp:"Moderate Risk",att:"No"},{yrs:7,inc:3816,bp:"Moderate Risk",att:"No"},
+    {yrs:10,inc:10938,bp:"Low Risk",att:"No"},{yrs:3,inc:8305,bp:"Moderate Risk",att:"No"},
+    {yrs:8,inc:2134,bp:"High Risk",att:"Yes"},{yrs:1,inc:4730,bp:"Low Risk",att:"No"},
+    {yrs:6,inc:5622,bp:"Moderate Risk",att:"No"},{yrs:14,inc:3738,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:5005,bp:"Low Risk",att:"No"},{yrs:2,inc:6365,bp:"Low Risk",att:"Yes"},
+    {yrs:0,inc:8208,bp:"Low Risk",att:"No"},{yrs:1,inc:6903,bp:"Low Risk",att:"Yes"},
+    {yrs:7,inc:7102,bp:"Moderate Risk",att:"No"},{yrs:7,inc:11291,bp:"Moderate Risk",att:"No"},
+    {yrs:3,inc:11738,bp:"Low Risk",att:"No"},{yrs:1,inc:7360,bp:"Low Risk",att:"No"},
+    {yrs:2,inc:5148,bp:"Low Risk",att:"Yes"},{yrs:9,inc:4880,bp:"Low Risk",att:"No"},
+    {yrs:3,inc:3813,bp:"Moderate Risk",att:"No"},{yrs:11,inc:3350,bp:"Moderate Risk",att:"Yes"},
+    {yrs:3,inc:3742,bp:"Moderate Risk",att:"No"},{yrs:0,inc:3882,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:4150,bp:"Low Risk",att:"No"},{yrs:2,inc:5212,bp:"Moderate Risk",att:"No"},
+    {yrs:7,inc:6526,bp:"Moderate Risk",att:"No"},{yrs:18,inc:5643,bp:"Moderate Risk",att:"No"},
+    {yrs:0,inc:10769,bp:"Low Risk",att:"No"},{yrs:14,inc:9229,bp:"Low Risk",att:"No"},
+    {yrs:20,inc:5336,bp:"Low Risk",att:"No"},{yrs:5,inc:4580,bp:"Moderate Risk",att:"Yes"},
+    {yrs:2,inc:3148,bp:"Low Risk",att:"No"},{yrs:6,inc:9514,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:6115,bp:"Moderate Risk",att:"No"},{yrs:2,inc:9853,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:12709,bp:"Low Risk",att:"No"},{yrs:6,inc:3027,bp:"Moderate Risk",att:"Yes"},
+    {yrs:4,inc:10910,bp:"Moderate Risk",att:"No"},{yrs:1,inc:11022,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:9483,bp:"Low Risk",att:"No"},{yrs:8,inc:4199,bp:"Moderate Risk",att:"No"},
+    {yrs:7,inc:2673,bp:"Moderate Risk",att:"No"},{yrs:7,inc:4426,bp:"Moderate Risk",att:"No"},
+    {yrs:8,inc:4484,bp:"Moderate Risk",att:"No"},{yrs:1,inc:6533,bp:"Low Risk",att:"No"},
+    {yrs:10,inc:4342,bp:"Low Risk",att:"No"},{yrs:6,inc:4739,bp:"Moderate Risk",att:"Yes"},
+    {yrs:3,inc:6837,bp:"Low Risk",att:"No"},{yrs:0,inc:3529,bp:"Moderate Risk",att:"No"},
+    {yrs:0,inc:11974,bp:"Low Risk",att:"No"},{yrs:4,inc:4284,bp:"Low Risk",att:"No"},
+    {yrs:14,inc:8195,bp:"Moderate Risk",att:"No"},{yrs:15,inc:3715,bp:"Moderate Risk",att:"No"},
+    {yrs:1,inc:2410,bp:"High Risk",att:"No"},{yrs:1,inc:3731,bp:"Moderate Risk",att:"Yes"},
+    {yrs:3,inc:2682,bp:"Moderate Risk",att:"No"},{yrs:18,inc:8355,bp:"High Risk",att:"No"},
+    {yrs:9,inc:7352,bp:"Low Risk",att:"Yes"},{yrs:8,inc:3933,bp:"Moderate Risk",att:"No"},
+    {yrs:10,inc:5116,bp:"High Risk",att:"Yes"},{yrs:1,inc:11890,bp:"Low Risk",att:"No"},
+    {yrs:2,inc:3004,bp:"Moderate Risk",att:"No"},{yrs:2,inc:7405,bp:"Low Risk",att:"No"},
+    {yrs:3,inc:6695,bp:"Moderate Risk",att:"Yes"},{yrs:13,inc:8003,bp:"Moderate Risk",att:"No"},
+    {yrs:0,inc:3151,bp:"Low Risk",att:"No"},{yrs:0,inc:8698,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:5845,bp:"Low Risk",att:"No"},{yrs:15,inc:6772,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:13061,bp:"Moderate Risk",att:"No"},{yrs:0,inc:5043,bp:"Low Risk",att:"No"},
+    {yrs:9,inc:8479,bp:"Moderate Risk",att:"No"},{yrs:1,inc:4117,bp:"Moderate Risk",att:"No"},
+    {yrs:0,inc:11038,bp:"Moderate Risk",att:"No"},{yrs:3,inc:3472,bp:"Moderate Risk",att:"Yes"},
+    {yrs:2,inc:7072,bp:"Moderate Risk",att:"No"},{yrs:6,inc:3710,bp:"High Risk",att:"No"},
+    {yrs:3,inc:3640,bp:"Low Risk",att:"Yes"},{yrs:0,inc:2827,bp:"Low Risk",att:"No"},
+    {yrs:9,inc:4595,bp:"Low Risk",att:"No"},{yrs:4,inc:10685,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:4889,bp:"Low Risk",att:"No"},{yrs:28,inc:3717,bp:"Low Risk",att:"No"},
+    {yrs:5,inc:3650,bp:"Moderate Risk",att:"No"},{yrs:27,inc:4752,bp:"High Risk",att:"No"},
+    {yrs:8,inc:3787,bp:"Moderate Risk",att:"Yes"},{yrs:9,inc:4285,bp:"Low Risk",att:"No"},
+    {yrs:21,inc:5453,bp:"Low Risk",att:"Yes"},{yrs:9,inc:2710,bp:"Moderate Risk",att:"Yes"},
+    {yrs:2,inc:4217,bp:"Low Risk",att:"No"},{yrs:2,inc:4806,bp:"Low Risk",att:"No"},
+    {yrs:11,inc:9165,bp:"Moderate Risk",att:"No"},{yrs:6,inc:4322,bp:"Moderate Risk",att:"Yes"},
+    {yrs:13,inc:5669,bp:"Low Risk",att:"No"},{yrs:7,inc:5072,bp:"Moderate Risk",att:"No"},
+    {yrs:9,inc:4269,bp:"Low Risk",att:"No"},{yrs:21,inc:4030,bp:"Low Risk",att:"No"},
+    {yrs:6,inc:6607,bp:"High Risk",att:"No"},{yrs:2,inc:6669,bp:"Moderate Risk",att:"Yes"},
+    {yrs:5,inc:3554,bp:"Low Risk",att:"No"},{yrs:29,inc:6492,bp:"Moderate Risk",att:"No"},
+    {yrs:4,inc:4966,bp:"Low Risk",att:"No"},{yrs:21,inc:6368,bp:"Moderate Risk",att:"Yes"},
+    {yrs:7,inc:9751,bp:"Low Risk",att:"No"},{yrs:7,inc:3618,bp:"High Risk",att:"Yes"},
+    {yrs:3,inc:8746,bp:"Low Risk",att:"No"},{yrs:2,inc:5927,bp:"Low Risk",att:"Yes"},
+    {yrs:9,inc:8526,bp:"Low Risk",att:"No"},{yrs:0,inc:9711,bp:"Low Risk",att:"No"},
+    {yrs:7,inc:4299,bp:"Moderate Risk",att:"No"},{yrs:20,inc:4606,bp:"Low Risk",att:"No"},
+    {yrs:26,inc:12724,bp:"Low Risk",att:"Yes"},{yrs:1,inc:4063,bp:"Low Risk",att:"No"},
+    {yrs:4,inc:2532,bp:"Moderate Risk",att:"No"},{yrs:0,inc:3547,bp:"Low Risk",att:"No"},
+    {yrs:1,inc:5400,bp:"High Risk",att:"Yes"},{yrs:8,inc:7682,bp:"Moderate Risk",att:"No"},
+    {yrs:10,inc:8902,bp:"Moderate Risk",att:"Yes"},{yrs:6,inc:5521,bp:"Moderate Risk",att:"No"},
+    {yrs:0,inc:9334,bp:"Low Risk",att:"No"},{yrs:3,inc:3765,bp:"Low Risk",att:"No"},
+    {yrs:21,inc:3340,bp:"Moderate Risk",att:"No"},{yrs:14,inc:5982,bp:"Moderate Risk",att:"No"},
+    {yrs:9,inc:12301,bp:"Low Risk",att:"No"},{yrs:5,inc:4018,bp:"Moderate Risk",att:"No"},
+    {yrs:17,inc:6902,bp:"Low Risk",att:"Yes"},{yrs:1,inc:3350,bp:"Low Risk",att:"Yes"},
+    {yrs:9,inc:5566,bp:"Low Risk",att:"No"},{yrs:6,inc:3124,bp:"High Risk",att:"No"},
+    {yrs:1,inc:11478,bp:"Low Risk",att:"No"},{yrs:2,inc:4038,bp:"Low Risk",att:"No"},
+    {yrs:11,inc:5036,bp:"Low Risk",att:"No"},{yrs:3,inc:6587,bp:"Moderate Risk",att:"No"},
+    {yrs:7,inc:3291,bp:"Moderate Risk",att:"Yes"},{yrs:1,inc:3268,bp:"Low Risk",att:"No"},
+    {yrs:6,inc:2959,bp:"Moderate Risk",att:"No"},{yrs:0,inc:12489,bp:"Moderate Risk",att:"Yes"},
+    {yrs:7,inc:5685,bp:"Low Risk",att:"Yes"},{yrs:8,inc:4484,bp:"Low Risk",att:"No"},
+    {yrs:5,inc:3920,bp:"Low Risk",att:"No"},{yrs:5,inc:4677,bp:"Moderate Risk",att:"No"},
+    {yrs:12,inc:6082,bp:"Moderate Risk",att:"No"},{yrs:26,inc:4266,bp:"Low Risk",att:"No"},
+    {yrs:13,inc:4043,bp:"Moderate Risk",att:"No"},{yrs:1,inc:14020,bp:"High Risk",att:"No"},
+    {yrs:10,inc:5157,bp:"Low Risk",att:"No"},{yrs:3,inc:6448,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:2073,bp:"Moderate Risk",att:"Yes"},{yrs:1,inc:8221,bp:"Moderate Risk",att:"No"},
+    {yrs:1,inc:10589,bp:"Low Risk",att:"Yes"},{yrs:1,inc:5554,bp:"Low Risk",att:"No"},
+    {yrs:4,inc:3714,bp:"Moderate Risk",att:"No"},{yrs:0,inc:4072,bp:"Low Risk",att:"Yes"},
+    {yrs:2,inc:3522,bp:"Low Risk",att:"No"},{yrs:1,inc:3699,bp:"Moderate Risk",att:"No"},
+    {yrs:6,inc:5573,bp:"Moderate Risk",att:"No"},{yrs:5,inc:8341,bp:"High Risk",att:"Yes"},
+    {yrs:0,inc:3231,bp:"Low Risk",att:"No"},{yrs:0,inc:10569,bp:"Low Risk",att:"No"},
+    {yrs:8,inc:5108,bp:"Low Risk",att:"No"},{yrs:3,inc:7813,bp:"Moderate Risk",att:"Yes"},
+    {yrs:0,inc:3893,bp:"Low Risk",att:"No"},{yrs:9,inc:2251,bp:"Moderate Risk",att:"No"},
+    {yrs:3,inc:4949,bp:"Moderate Risk",att:"Yes"},{yrs:24,inc:9502,bp:"Moderate Risk",att:"Yes"},
+    {yrs:9,inc:8548,bp:"Low Risk",att:"No"},{yrs:25,inc:4559,bp:"Moderate Risk",att:"No"},
+    {yrs:3,inc:5052,bp:"Moderate Risk",att:"Yes"},{yrs:1,inc:5211,bp:"Moderate Risk",att:"No"},
+    {yrs:38,inc:12780,bp:"Moderate Risk",att:"Yes"},{yrs:3,inc:4645,bp:"Moderate Risk",att:"No"},
+    {yrs:3,inc:5518,bp:"Low Risk",att:"No"},{yrs:3,inc:3472,bp:"Moderate Risk",att:"No"},
+    {yrs:12,inc:4967,bp:"Moderate Risk",att:"No"},{yrs:14,inc:8433,bp:"Moderate Risk",att:"Yes"},
+    {yrs:7,inc:2977,bp:"Low Risk",att:"No"},{yrs:8,inc:5442,bp:"Low Risk",att:"No"},
+    {yrs:3,inc:11964,bp:"Moderate Risk",att:"No"},{yrs:4,inc:4721,bp:"Low Risk",att:"No"},
+    {yrs:5,inc:4308,bp:"Moderate Risk",att:"No"},{yrs:18,inc:9293,bp:"Low Risk",att:"No"},
+    {yrs:4,inc:4041,bp:"Low Risk",att:"No"},{yrs:15,inc:4243,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:3139,bp:"Low Risk",att:"Yes"},{yrs:20,inc:3092,bp:"Moderate Risk",att:"No"},
+    {yrs:0,inc:3266,bp:"Moderate Risk",att:"No"},{yrs:0,inc:9580,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:8470,bp:"Low Risk",att:"No"},{yrs:15,inc:9509,bp:"Moderate Risk",att:"No"},
+    {yrs:4,inc:6019,bp:"Moderate Risk",att:"No"},{yrs:0,inc:3824,bp:"Low Risk",att:"Yes"},
+    {yrs:0,inc:7359,bp:"Low Risk",att:"No"},{yrs:3,inc:4537,bp:"High Risk",att:"No"},
+    {yrs:2,inc:5402,bp:"Low Risk",att:"Yes"},{yrs:1,inc:8183,bp:"Low Risk",att:"No"},
+    {yrs:0,inc:7648,bp:"Moderate Risk",att:"No"},{yrs:21,inc:10197,bp:"Moderate Risk",att:"Yes"},
+    {yrs:15,inc:9137,bp:"Moderate Risk",att:"No"},{yrs:20,inc:2801,bp:"Moderate Risk",att:"Yes"}
+  ]
+};
+
+// ── COLOR MAP ─────────────────────────────────────────────
+const COLORS = {
+  "Low Risk":      "#10B981",
+  "Moderate Risk": "#F59E0B",
+  "High Risk":     "#F97316",
+  "Critical Risk": "#EF4444"
+};
+const CA = (hex, a) => hex + Math.round(a*255).toString(16).padStart(2,'0');
+
+// ── CANVAS UTILS ──────────────────────────────────────────
+function setupCanvas(id) {
+  const c = document.getElementById(id);
+  if (!c) return null;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = c.getBoundingClientRect();
+  c.width = rect.width * dpr;
+  c.height = parseInt(c.getAttribute('height')) * dpr;
+  ctx.scale(dpr, dpr);
+  c.style.width = rect.width + 'px';
+  c.style.height = parseInt(c.getAttribute('height')) + 'px';
+  return { ctx, w: rect.width, h: parseInt(c.getAttribute('height')) };
+}
+
+// ── 1. DIVERGING BAR CHART ────────────────────────────────
+function drawDivergingBar() {
+  const s = setupCanvas('divergingBar');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const pad = { t: 20, b: 35, l: 150, r: 80 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+  const data = DATA.dept_attrition;
+  const maxDev = 10;
+  const bh = ch / data.length - 14;
+  const midX = pad.l + cw / 2;
+
+  // Grid
+  ctx.strokeStyle = '#30363D44'; ctx.lineWidth = 1;
+  [-8,-4,0,4,8].forEach(v => {
+    const x = midX + (v / maxDev) * (cw / 2);
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + ch);
+    ctx.stroke();
+    ctx.fillStyle = '#8B949E'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+    ctx.fillText((v > 0 ? '+' : '') + v + '%', x, pad.t + ch + 14);
+  });
+
+  // Avg line
+  ctx.strokeStyle = '#F59E0B'; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(midX, pad.t - 8); ctx.lineTo(midX, pad.t + ch + 5); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#F59E0B'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('AVG 26.5%', midX, pad.t - 12);
+
+  data.forEach((d, i) => {
+    const y = pad.t + i * (ch / data.length) + (ch / data.length - bh) / 2;
+    const barW = (Math.abs(d.Deviation) / maxDev) * (cw / 2);
+    const barX = d.Deviation >= 0 ? midX : midX - barW;
+    const col = d.Deviation >= 0 ? '#EF4444' : '#10B981';
+
+    ctx.fillStyle = col + '33';
+    ctx.fillRect(barX, y, barW, bh);
+    ctx.fillStyle = col;
+    ctx.fillRect(barX, y, barW, bh);
+
+    // Label
+    ctx.fillStyle = '#E6EDF3'; ctx.font = 'bold 11px Inter'; ctx.textAlign = 'right';
+    ctx.fillText(d.Department, pad.l - 8, y + bh / 2 + 4);
+
+    // Value
+    const valX = d.Deviation >= 0 ? midX + barW + 5 : midX - barW - 5;
+    ctx.fillStyle = col; ctx.font = 'bold 11px Inter';
+    ctx.textAlign = d.Deviation >= 0 ? 'left' : 'right';
+    ctx.fillText(d.AttritionRate.toFixed(1) + '%', valX, y + bh / 2 + 4);
+
+    const devText = (d.Deviation > 0 ? '+' : '') + d.Deviation.toFixed(1) + '%';
+    ctx.fillStyle = '#8B949E'; ctx.font = '9px Inter';
+    ctx.fillText(devText, valX, y + bh / 2 + 15);
+  });
+}
+
+// ── 2. ROLE ATTRITION (Horizontal Bar) ───────────────────
+function drawRoleAttrition() {
+  const s = setupCanvas('roleAttrition');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const pad = { t: 10, b: 25, l: 130, r: 60 };
+  const data = DATA.role_attrition;
+  const max = 35;
+  const barH = (h - pad.t - pad.b) / data.length - 4;
+
+  ctx.strokeStyle = '#30363D44'; ctx.lineWidth = 1;
+  [10,15,20,25,30,35].forEach(v => {
+    const x = pad.l + (v / max) * (w - pad.l - pad.r);
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, h - pad.b); ctx.stroke();
+    ctx.fillStyle = '#8B949E'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+    ctx.fillText(v + '%', x, h - pad.b + 12);
+  });
+
+  const avgX = pad.l + (26.5 / max) * (w - pad.l - pad.r);
+  ctx.strokeStyle = '#F59E0B44'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(avgX, pad.t); ctx.lineTo(avgX, h - pad.b); ctx.stroke();
+  ctx.setLineDash([]);
+
+  data.forEach((d, i) => {
+    const y = pad.t + i * ((h - pad.t - pad.b) / data.length);
+    const bw = (d.AttritionRate / max) * (w - pad.l - pad.r);
+    const col = d.AttritionRate > 26.5 ? '#EF4444' : '#10B981';
+
+    ctx.fillStyle = col + '20'; ctx.fillRect(pad.l, y + 2, bw, barH);
+    ctx.fillStyle = col; ctx.fillRect(pad.l, y + 2, bw, barH);
+
+    ctx.fillStyle = '#E6EDF3'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
+    ctx.fillText(d.JobRole, pad.l - 6, y + barH / 2 + 5);
+    ctx.fillStyle = col; ctx.font = 'bold 10px Inter'; ctx.textAlign = 'left';
+    ctx.fillText(d.AttritionRate + '%', pad.l + bw + 4, y + barH / 2 + 5);
+  });
+}
+
+// ── 3. TENURE CHART ──────────────────────────────────────
+function drawTenureChart() {
+  const s = setupCanvas('tenureChart');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const pad = { t: 20, b: 50, l: 35, r: 20 };
+  const data = DATA.tenure_attrition;
+  const max = 35;
+  const n = data.length;
+  const bw = (w - pad.l - pad.r) / n - 8;
+
+  [10,20,30].forEach(v => {
+    const y = pad.t + (h - pad.t - pad.b) * (1 - v / max);
+    ctx.strokeStyle = '#30363D55'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#8B949E'; ctx.font = '9px Inter'; ctx.textAlign = 'right';
+    ctx.fillText(v + '%', pad.l - 3, y + 3);
+  });
+
+  const avgY = pad.t + (h - pad.t - pad.b) * (1 - 26.5 / max);
+  ctx.strokeStyle = '#F59E0B'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(pad.l, avgY); ctx.lineTo(w - pad.r, avgY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  data.forEach((d, i) => {
+    const x = pad.l + i * ((w - pad.l - pad.r) / n) + ((w - pad.l - pad.r) / n - bw) / 2;
+    const bh = (d.val / max) * (h - pad.t - pad.b);
+    const y = pad.t + (h - pad.t - pad.b) - bh;
+    const col = d.val > 26.5 ? '#EF4444' : '#10B981';
+
+    ctx.fillStyle = col + '30'; ctx.fillRect(x, y, bw, bh);
+    ctx.fillStyle = col; ctx.fillRect(x, y + bh - 3, bw, 3);
+    ctx.fillRect(x, y, bw, 4);
+
+    ctx.fillStyle = col; ctx.font = 'bold 10px Inter'; ctx.textAlign = 'center';
+    ctx.fillText(d.val + '%', x + bw / 2, y - 5);
+
+    const lines = d.label.split('\n');
+    ctx.fillStyle = '#8B949E'; ctx.font = '9px Inter';
+    lines.forEach((line, li) => ctx.fillText(line, x + bw / 2, h - pad.b + 14 + li * 12));
+  });
+}
+
+// ── 4. SCATTER PLOT ──────────────────────────────────────
+function drawScatter() {
+  const s = setupCanvas('scatterPlot');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const pad = { t: 10, b: 30, l: 55, r: 15 };
+  const data = DATA.scatter;
+  const maxY = 15100, maxX = 40;
+  const cx = (x) => pad.l + (x / maxX) * (w - pad.l - pad.r);
+  const cy = (y) => pad.t + (1 - y / maxY) * (h - pad.t - pad.b);
+
+  // Grid
+  [0,10,20,30,40].forEach(v => {
+    const x = cx(v);
+    ctx.strokeStyle = '#30363D44'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, h - pad.b); ctx.stroke();
+    ctx.fillStyle = '#8B949E'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+    ctx.fillText(v, x, h - pad.b + 12);
+  });
+  [0,5000,10000,15000].forEach(v => {
+    const y = cy(v);
+    ctx.strokeStyle = '#30363D44'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#8B949E'; ctx.font = '9px Inter'; ctx.textAlign = 'right';
+    ctx.fillText('$' + (v/1000) + 'k', pad.l - 3, y + 3);
+  });
+
+  // Axes labels
+  ctx.fillStyle = '#8B949E'; ctx.font = '10px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('Years at Company', w / 2, h - 2);
+  ctx.save(); ctx.translate(12, h / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Monthly Income', 0, 0); ctx.restore();
+
+  // Points
+  data.forEach(d => {
+    const x = cx(d.yrs), y = cy(d.inc);
+    const col = COLORS[d.bp] || '#8B949E';
+    const r = d.bp === 'High Risk' ? 5 : d.bp === 'Critical Risk' ? 7 : 3.5;
+
+    ctx.globalAlpha = 0.75;
+    if (d.att === 'Yes') {
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x - r, y - r); ctx.lineTo(x + r, y + r);
+      ctx.moveTo(x + r, y - r); ctx.lineTo(x - r, y + r); ctx.stroke();
+    } else {
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  });
+
+  // Quadrant labels
+  ctx.fillStyle = '#30363D';
+  ctx.fillRect(pad.l, pad.t, (w - pad.l - pad.r) / 2, (h - pad.t - pad.b) / 2);
+  ctx.fillStyle = '#EF444430'; ctx.fillRect(pad.l, h / 2 - 10, (w - pad.l - pad.r) / 2, (h - pad.t - pad.b) / 2);
+  ctx.fillStyle = '#EF4444'; ctx.font = 'bold 9px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('⚠ HIGH RISK ZONE', pad.l + (w - pad.l - pad.r) / 4, h - pad.b - 12);
+  ctx.fillText('Low income + Early tenure', pad.l + (w - pad.l - pad.r) / 4, h - pad.b - 1);
+}
+
+// ── 5. MONTHLY TREND ─────────────────────────────────────
+function drawMonthlyTrend() {
+  const s = setupCanvas('monthlyTrend');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const pad = { t: 15, b: 25, l: 30, r: 15 };
+  const months = Object.keys(DATA.monthly_attrition);
+  const vals = Object.values(DATA.monthly_attrition);
+  const max = Math.max(...vals) + 5;
+  const n = months.length;
+  const step = (w - pad.l - pad.r) / (n - 1);
+
+  const cx = (i) => pad.l + i * step;
+  const cy = (v) => pad.t + (1 - v / max) * (h - pad.t - pad.b);
+
+  // Fill
+  ctx.beginPath(); ctx.moveTo(cx(0), cy(vals[0]));
+  vals.forEach((v, i) => ctx.lineTo(cx(i), cy(v)));
+  ctx.lineTo(cx(n - 1), h - pad.b); ctx.lineTo(cx(0), h - pad.b); ctx.closePath();
+  ctx.fillStyle = 'rgba(59,130,246,0.1)'; ctx.fill();
+
+  // Line
+  ctx.beginPath(); ctx.moveTo(cx(0), cy(vals[0]));
+  vals.forEach((v, i) => ctx.lineTo(cx(i), cy(v)));
+  ctx.strokeStyle = '#3B82F6'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Dots
+  vals.forEach((v, i) => {
+    const col = v >= 20 ? '#EF4444' : '#3B82F6';
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(cx(i), cy(v), 3.5, 0, Math.PI * 2); ctx.fill();
+    if (v >= 20) {
+      ctx.fillStyle = col; ctx.font = 'bold 9px Inter'; ctx.textAlign = 'center';
+      ctx.fillText(v, cx(i), cy(v) - 7);
+    }
+  });
+
+  months.forEach((m, i) => {
+    ctx.fillStyle = '#8B949E'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+    ctx.fillText(m, cx(i), h - pad.b + 12);
+  });
+}
+
+// ── 6. PAY GAP CHART ─────────────────────────────────────
+function drawPayGap() {
+  const s = setupCanvas('payGapChart');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const pad = { t: 10, b: 25, l: 115, r: 45 };
+  const data = DATA.pay_by_role.slice(0, 7);
+  const max = 40;
+  const n = data.length;
+  const barH = (h - pad.t - pad.b) / n - 5;
+
+  data.forEach((d, i) => {
+    const y = pad.t + i * ((h - pad.t - pad.b) / n);
+    const bw = (d.UnderpaidPct / max) * (w - pad.l - pad.r);
+    const col = d.UnderpaidPct > 32 ? '#EF4444' : d.UnderpaidPct > 30 ? '#F97316' : '#F59E0B';
+
+    ctx.fillStyle = col + '25'; ctx.fillRect(pad.l, y + 2, bw, barH);
+    ctx.fillStyle = col; ctx.fillRect(pad.l, y + 2, bw, barH);
+    ctx.fillRect(pad.l, y + 2, 3, barH);
+
+    ctx.fillStyle = '#E6EDF3'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
+    ctx.fillText(d.JobRole, pad.l - 6, y + barH / 2 + 4);
+    ctx.fillStyle = col; ctx.font = 'bold 10px Inter'; ctx.textAlign = 'left';
+    ctx.fillText(d.UnderpaidPct.toFixed(1) + '%', pad.l + bw + 4, y + barH / 2 + 4);
+  });
+
+  ctx.fillStyle = '#8B949E'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('% Underpaid vs Role Average', pad.l + (w - pad.l - pad.r) / 2, h - pad.b + 14);
+}
+
+// ── 7. OVERTIME CHART ────────────────────────────────────
+function drawOvertime() {
+  const s = setupCanvas('overtimeChart');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const data = [{l:'No OT',v:22.8,c:'#10B981'},{l:'Overtime',v:36.2,c:'#EF4444'}];
+  const max = 45;
+  const pad = { t: 10, b: 22, l: 55, r: 15 };
+  const bw = (w - pad.l - pad.r) / 2 - 10;
+
+  data.forEach((d, i) => {
+    const x = pad.l + i * ((w - pad.l - pad.r) / 2);
+    const bh = (d.v / max) * (h - pad.t - pad.b);
+    const y = h - pad.b - bh;
+
+    ctx.fillStyle = d.c + '30'; ctx.fillRect(x, y, bw, bh);
+    ctx.fillStyle = d.c; ctx.fillRect(x, y, bw, 4);
+    ctx.fillRect(x, h - pad.b - bh, bw, bh);
+
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 13px Inter'; ctx.textAlign = 'center';
+    ctx.fillText(d.v + '%', x + bw / 2, y + bh / 2 + 5);
+    ctx.fillStyle = '#8B949E'; ctx.font = '10px Inter';
+    ctx.fillText(d.l, x + bw / 2, h - pad.b + 14);
+  });
+}
+
+// ── 8. BURNOUT GAUGES ────────────────────────────────────
+function drawBurnoutGauges() {
+  const el = document.getElementById('burnoutGauges');
+  const data = DATA.burnout_by_role;
+  const maxScore = 7;
+  el.innerHTML = data.map(d => {
+    const pct = (d.AvgBurnout / maxScore) * 100;
+    const col = d.AvgBurnout >= 6.2 ? '#EF4444' : d.AvgBurnout >= 5.9 ? '#F97316' : '#F59E0B';
+    return `
+      <div class="gauge-item" style="margin-bottom:9px;">
+        <div class="gauge-label">
+          <span style="color:#E6EDF3;font-size:10px;">${d.JobRole}</span>
+          <span style="color:${col};font-weight:700;">${d.AvgBurnout.toFixed(2)}/7  ·  ${d.AttritionRate}% attrition</span>
+        </div>
+        <div class="gauge-track">
+          <div class="gauge-fill" style="width:${pct}%;background:${col};"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── 9. BURNOUT COMPONENTS BAR ─────────────────────────────
+function drawBurnoutComponents() {
+  const s = setupCanvas('burnoutComponents');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const components = [
+    {l:'Overtime (max 3)',v:3,pct:0.85,c:'#EF4444'},
+    {l:'Work-Life Balance (max 3)',v:2.3,pct:0.72,c:'#F97316'},
+    {l:'Job Satisfaction (max 3)',v:2.0,pct:0.63,c:'#F59E0B'},
+    {l:'Env Satisfaction (max 3)',v:1.9,pct:0.60,c:'#EAB308'},
+    {l:'Promotion Stagnation (max 2)',v:1.2,pct:0.42,c:'#8B5CF6'},
+    {l:'Pay Gap (max 2)',v:0.8,pct:0.28,c:'#3B82F6'},
+    {l:'Business Travel (max 2)',v:0.9,pct:0.32,c:'#14B8A6'},
+    {l:'Low Involvement (max 1)',v:0.3,pct:0.18,c:'#6B7280'}
+  ];
+  const pad = { t: 10, b: 20, l: 185, r: 60 };
+  const barH = (h - pad.t - pad.b) / components.length - 5;
+
+  components.forEach((d, i) => {
+    const y = pad.t + i * ((h - pad.t - pad.b) / components.length);
+    const bw = d.pct * (w - pad.l - pad.r);
+
+    ctx.fillStyle = d.c + '25'; ctx.fillRect(pad.l, y + 2, w - pad.l - pad.r, barH);
+    ctx.fillStyle = d.c; ctx.fillRect(pad.l, y + 2, bw, barH);
+
+    ctx.fillStyle = '#E6EDF3'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
+    ctx.fillText(d.l, pad.l - 6, y + barH / 2 + 4);
+    ctx.fillStyle = d.c; ctx.font = 'bold 10px Inter'; ctx.textAlign = 'left';
+    ctx.fillText(d.v.toFixed(1) + ' avg', pad.l + bw + 4, y + barH / 2 + 4);
+  });
+}
+
+// ── 10. PRIORITY TABLE ───────────────────────────────────
+function buildPriorityTable() {
+  const tbody = document.getElementById('priorityBody');
+  const data = DATA.role_attrition.map(r => ({
+    ...r,
+    burnout: DATA.burnout_by_role.find(b => b.JobRole.includes(r.JobRole.split(' ')[0]))?.AvgBurnout || 5.9
+  }));
+  data.sort((a, b) => (b.AttritionRate + b.AvgBurnout * 2) - (a.AttritionRate + a.AvgBurnout * 2));
+  tbody.innerHTML = data.slice(0, 7).map((d, i) => {
+    const riskScore = d.AttritionRate + d.AvgBurnout * 2;
+    const action = riskScore > 41 ? ['pill-red', 'IMMEDIATE'] : riskScore > 38 ? ['pill-amber', 'HIGH PRI'] : ['pill-blue', 'MONITOR'];
+    return `<tr>
+      <td style="font-weight:600;">${d.JobRole}</td>
+      <td><span style="color:${d.AttritionRate>26.5?'#EF4444':'#10B981'};font-weight:700;">${d.AttritionRate}%</span></td>
+      <td style="color:#F59E0B;">${d.AvgBurnout.toFixed(2)}</td>
+      <td><span class="pill ${action[0]}">${action[1]}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── INTERACTIVE BURNOUT FOCUS PANEL ──────────────────────
+function toggleBurnoutFocus() {
+  const card = document.getElementById('burnoutCard');
+  const panel = document.getElementById('focusPanel');
+  card.classList.toggle('active');
+  panel.classList.toggle('visible');
+
+  if (panel.classList.contains('visible')) {
+    const grid = document.getElementById('focusGrid');
+    grid.innerHTML = DATA.burnout_by_role.map(d => `
+      <div class="focus-role">
+        <div class="focus-role-name">${d.JobRole}</div>
+        <div class="focus-role-stat">Avg Burnout Score <span>${d.AvgBurnout.toFixed(2)}/10</span></div>
+        <div class="focus-role-stat">High+Critical Count <span style="color:#EF4444;">${d.CriticalCount}</span></div>
+        <div class="focus-role-stat">Attrition Rate <span style="color:${d.AttritionRate>26.5?'#EF4444':'#10B981'}">${d.AttritionRate}%</span></div>
+      </div>
+    `).join('');
+  }
+}
+
+// ── FILTER HANDLER ───────────────────────────────────────
+function filterDept(dept) {
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    if (['All Departments','Sales','Research & Development','Human Resources'].some(d => b.textContent === d)) {
+      b.classList.remove('active');
+    }
+  });
+  event.target.classList.add('active');
+  // In a real Power BI scenario this would filter all visuals
+  // Here we just show a visual indicator
+  const hint = document.getElementById('filterHint');
+  if (hint) hint.textContent = dept === 'All' ? '' : `Filtered: ${dept}`;
+}
+
+function filterBurnout(level) {
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    if (['All Risk Levels','High + Critical','Moderate Risk'].some(d => b.textContent === d)) {
+      b.classList.remove('active');
+    }
+  });
+  event.target.classList.add('active');
+}
+
+// ── INIT ─────────────────────────────────────────────────
+function init() {
+  // Small delay to let layout settle
+  setTimeout(() => {
+    drawDivergingBar();
+    drawRoleAttrition();
+    drawTenureChart();
+    drawScatter();
+    drawMonthlyTrend();
+    drawPayGap();
+    drawOvertime();
+    drawBurnoutGauges();
+    drawBurnoutComponents();
+    buildPriorityTable();
+  }, 100);
+}
+
+// Run after DOM + fonts load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else { init(); }
+window.addEventListener('resize', init);
+</script>
+</body>
+</html>
