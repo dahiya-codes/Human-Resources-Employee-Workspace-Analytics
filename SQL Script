@@ -1,0 +1,315 @@
+-- ============================================================
+--  IBM HR ANALYTICS — ENTERPRISE SQL SCRIPTS
+--  Author: HR Analytics Team
+--  Target: PostgreSQL / BigQuery compatible
+--  Purpose: Multi-factor churn risk & burnout segmentation
+-- ============================================================
+
+-- ── STEP 1: Create Base Table ──────────────────────────────
+CREATE TABLE IF NOT EXISTS hr_employees (
+    emp_hash          VARCHAR(20)  PRIMARY KEY,
+    age               INT,
+    department        VARCHAR(60),
+    job_role          VARCHAR(60),
+    job_level         INT,
+    tenure_category   VARCHAR(30),
+    distance_category VARCHAR(25),
+    monthly_income    NUMERIC(10,2),
+    overtime          VARCHAR(5),
+    performance_rating INT,
+    env_satisfaction  INT,
+    job_satisfaction  INT,
+    work_life_balance INT,
+    attrition         VARCHAR(5),
+    years_at_company  INT,
+    years_since_promo INT,
+    num_companies     INT,
+    training_times    INT,
+    business_travel   VARCHAR(25),
+    job_involvement   INT,
+    rel_satisfaction  INT,
+    total_working_yrs INT,
+    stock_option_lvl  INT,
+    gender            VARCHAR(10),
+    marital_status    VARCHAR(15)
+);
+
+-- ── STEP 2: CTE — High Performers with Low Satisfaction ────
+-- Identifies flight-risk stars: great performance, poor environment
+WITH at_risk_stars AS (
+    SELECT
+        emp_hash,
+        department,
+        job_role,
+        monthly_income,
+        performance_rating,
+        env_satisfaction,
+        job_satisfaction,
+        work_life_balance,
+        attrition,
+        years_at_company,
+        -- Flag for manager alert
+        CASE 
+            WHEN attrition = 'Yes' THEN 'ALREADY LOST'
+            WHEN env_satisfaction = 1 AND job_satisfaction <= 2 THEN 'CRITICAL — ACT NOW'
+            WHEN env_satisfaction = 2 THEN 'HIGH RISK — MONITOR'
+            ELSE 'WATCH LIST'
+        END AS risk_label
+    FROM hr_employees
+    WHERE 
+        performance_rating >= 3          -- Star performers
+        AND env_satisfaction <= 2        -- But unhappy environment
+    ORDER BY 
+        env_satisfaction ASC,
+        job_satisfaction ASC
+)
+SELECT 
+    risk_label,
+    department,
+    job_role,
+    COUNT(*)                                        AS employee_count,
+    SUM(CASE WHEN attrition='Yes' THEN 1 ELSE 0 END) AS already_left,
+    ROUND(AVG(monthly_income), 0)                  AS avg_income,
+    ROUND(AVG(years_at_company), 1)                AS avg_tenure_yrs
+FROM at_risk_stars
+GROUP BY risk_label, department, job_role
+ORDER BY 
+    CASE risk_label
+        WHEN 'CRITICAL — ACT NOW'  THEN 1
+        WHEN 'ALREADY LOST'        THEN 2
+        WHEN 'HIGH RISK — MONITOR' THEN 3
+        ELSE 4
+    END,
+    employee_count DESC;
+
+
+-- ── STEP 3: Window Function — Relative Pay Analysis ────────
+-- Uses AVG() OVER (PARTITION BY JobRole) to find underpaid employees
+SELECT
+    emp_hash,
+    job_role,
+    department,
+    monthly_income,
+    ROUND(
+        AVG(monthly_income) OVER (PARTITION BY job_role),
+        0
+    )                                                       AS role_avg_income,
+    ROUND(
+        monthly_income - AVG(monthly_income) OVER (PARTITION BY job_role),
+        0
+    )                                                       AS pay_gap_abs,
+    ROUND(
+        (monthly_income - AVG(monthly_income) OVER (PARTITION BY job_role))
+        / AVG(monthly_income) OVER (PARTITION BY job_role) * 100,
+        1
+    )                                                       AS pay_gap_pct,
+    CASE
+        WHEN monthly_income < AVG(monthly_income) OVER (PARTITION BY job_role) * 0.90
+            THEN 'Underpaid (>10% below avg)'
+        WHEN monthly_income > AVG(monthly_income) OVER (PARTITION BY job_role) * 1.10
+            THEN 'Overpaid (>10% above avg)'
+        ELSE 'Fair Compensation (±10%)'
+    END                                                     AS pay_status,
+    -- Rank within role (1 = lowest paid)
+    RANK() OVER (PARTITION BY job_role ORDER BY monthly_income ASC) AS pay_rank_in_role,
+    COUNT(*) OVER (PARTITION BY job_role)                   AS total_in_role,
+    attrition
+FROM hr_employees
+ORDER BY pay_gap_pct ASC;   -- Worst underpaid first
+
+
+-- ── STEP 4: Burnout Index Score (Complex CASE WHEN) ────────
+-- Composite burnout risk from 7 behavioral & financial factors
+-- Score range: 0 (no risk) to 18+ (extreme burnout)
+SELECT
+    emp_hash,
+    department,
+    job_role,
+    monthly_income,
+    overtime,
+    work_life_balance,
+    job_satisfaction,
+    env_satisfaction,
+    years_since_promo,
+    business_travel,
+    job_involvement,
+    attrition,
+
+    -- ── COMPONENT SCORES ──────────────────────────────────
+    -- Overtime (0–3 pts): highest single factor
+    CASE WHEN overtime = 'Yes' THEN 3 ELSE 0 END
+        AS score_overtime,
+
+    -- Work-life balance (0–3 pts): inverse scale
+    (4 - work_life_balance)
+        AS score_wlb,
+
+    -- Job satisfaction (0–3 pts): inverse scale
+    (4 - job_satisfaction)
+        AS score_job_sat,
+
+    -- Environment satisfaction (0–3 pts): inverse scale
+    (4 - env_satisfaction)
+        AS score_env_sat,
+
+    -- Promotion stagnation (0–2 pts)
+    CASE
+        WHEN years_since_promo >= 5 THEN 2
+        WHEN years_since_promo >= 3 THEN 1
+        ELSE 0
+    END AS score_promotion,
+
+    -- Pay gap relative to role (0–2 pts)
+    CASE
+        WHEN monthly_income < (
+            AVG(monthly_income) OVER (PARTITION BY job_role) * 0.85
+        ) THEN 2
+        WHEN monthly_income < (
+            AVG(monthly_income) OVER (PARTITION BY job_role) * 0.95
+        ) THEN 1
+        ELSE 0
+    END AS score_pay_gap,
+
+    -- Business travel burden (0–2 pts)
+    CASE
+        WHEN business_travel = 'Travel_Frequently' THEN 2
+        WHEN business_travel = 'Travel_Rarely'     THEN 1
+        ELSE 0
+    END AS score_travel,
+
+    -- Low job involvement (0–1 pt): disengagement signal
+    CASE WHEN job_involvement <= 2 THEN 1 ELSE 0 END
+        AS score_involvement,
+
+    -- ── TOTAL BURNOUT SCORE ───────────────────────────────
+    (
+        CASE WHEN overtime = 'Yes' THEN 3 ELSE 0 END
+        + (4 - work_life_balance)
+        + (4 - job_satisfaction)
+        + (4 - env_satisfaction)
+        + CASE WHEN years_since_promo >= 5 THEN 2 WHEN years_since_promo >= 3 THEN 1 ELSE 0 END
+        + CASE
+            WHEN monthly_income < AVG(monthly_income) OVER (PARTITION BY job_role) * 0.85 THEN 2
+            WHEN monthly_income < AVG(monthly_income) OVER (PARTITION BY job_role) * 0.95 THEN 1
+            ELSE 0
+          END
+        + CASE WHEN business_travel = 'Travel_Frequently' THEN 2 WHEN business_travel = 'Travel_Rarely' THEN 1 ELSE 0 END
+        + CASE WHEN job_involvement <= 2 THEN 1 ELSE 0 END
+    ) AS burnout_score,
+
+    -- ── BURNOUT PROFILE LABEL ─────────────────────────────
+    CASE
+        WHEN (
+            CASE WHEN overtime = 'Yes' THEN 3 ELSE 0 END
+            + (4 - work_life_balance) + (4 - job_satisfaction) + (4 - env_satisfaction)
+            + CASE WHEN years_since_promo >= 5 THEN 2 WHEN years_since_promo >= 3 THEN 1 ELSE 0 END
+            + CASE WHEN monthly_income < AVG(monthly_income) OVER (PARTITION BY job_role) * 0.85 THEN 2
+                   WHEN monthly_income < AVG(monthly_income) OVER (PARTITION BY job_role) * 0.95 THEN 1 ELSE 0 END
+            + CASE WHEN business_travel = 'Travel_Frequently' THEN 2 WHEN business_travel = 'Travel_Rarely' THEN 1 ELSE 0 END
+            + CASE WHEN job_involvement <= 2 THEN 1 ELSE 0 END
+        ) >= 14 THEN 'Critical Risk'
+        WHEN (
+            CASE WHEN overtime = 'Yes' THEN 3 ELSE 0 END
+            + (4 - work_life_balance) + (4 - job_satisfaction) + (4 - env_satisfaction)
+            + CASE WHEN years_since_promo >= 5 THEN 2 WHEN years_since_promo >= 3 THEN 1 ELSE 0 END
+            + CASE WHEN monthly_income < AVG(monthly_income) OVER (PARTITION BY job_role) * 0.85 THEN 2
+                   WHEN monthly_income < AVG(monthly_income) OVER (PARTITION BY job_role) * 0.95 THEN 1 ELSE 0 END
+            + CASE WHEN business_travel = 'Travel_Frequently' THEN 2 WHEN business_travel = 'Travel_Rarely' THEN 1 ELSE 0 END
+            + CASE WHEN job_involvement <= 2 THEN 1 ELSE 0 END
+        ) >= 10 THEN 'High Risk'
+        WHEN (
+            CASE WHEN overtime = 'Yes' THEN 3 ELSE 0 END
+            + (4 - work_life_balance) + (4 - job_satisfaction) + (4 - env_satisfaction)
+            + CASE WHEN years_since_promo >= 5 THEN 2 WHEN years_since_promo >= 3 THEN 1 ELSE 0 END
+            + CASE WHEN monthly_income < AVG(monthly_income) OVER (PARTITION BY job_role) * 0.85 THEN 2
+                   WHEN monthly_income < AVG(monthly_income) OVER (PARTITION BY job_role) * 0.95 THEN 1 ELSE 0 END
+            + CASE WHEN business_travel = 'Travel_Frequently' THEN 2 WHEN business_travel = 'Travel_Rarely' THEN 1 ELSE 0 END
+            + CASE WHEN job_involvement <= 2 THEN 1 ELSE 0 END
+        ) >= 6 THEN 'Moderate Risk'
+        ELSE 'Low Risk'
+    END AS burnout_profile
+
+FROM hr_employees
+ORDER BY burnout_score DESC;
+
+
+-- ── STEP 5: Department Attrition vs Company Average ────────
+WITH dept_stats AS (
+    SELECT
+        department,
+        COUNT(*)                                            AS headcount,
+        SUM(CASE WHEN attrition='Yes' THEN 1 ELSE 0 END)  AS attrited,
+        ROUND(
+            SUM(CASE WHEN attrition='Yes' THEN 1 ELSE 0 END)::NUMERIC
+            / COUNT(*) * 100, 1
+        )                                                   AS attrition_pct
+    FROM hr_employees
+    GROUP BY department
+),
+company_avg AS (
+    SELECT ROUND(
+        SUM(CASE WHEN attrition='Yes' THEN 1 ELSE 0 END)::NUMERIC
+        / COUNT(*) * 100, 1
+    ) AS company_avg_pct
+    FROM hr_employees
+)
+SELECT
+    d.department,
+    d.headcount,
+    d.attrited,
+    d.attrition_pct,
+    c.company_avg_pct,
+    ROUND(d.attrition_pct - c.company_avg_pct, 1) AS deviation_from_avg,
+    CASE
+        WHEN d.attrition_pct > c.company_avg_pct + 5 THEN 'ABOVE AVG — Needs Attention'
+        WHEN d.attrition_pct < c.company_avg_pct - 5 THEN 'BELOW AVG — Best Practice'
+        ELSE 'AT COMPANY AVERAGE'
+    END AS performance_vs_avg
+FROM dept_stats d
+CROSS JOIN company_avg c
+ORDER BY deviation_from_avg DESC;
+
+
+-- ── STEP 6: Retention Cohort — Who is MOST at Risk Right Now?
+-- Combines all factors for an actionable retention target list
+WITH burnout_computed AS (
+    SELECT *,
+        (
+            CASE WHEN overtime = 'Yes' THEN 3 ELSE 0 END
+            + (4 - work_life_balance)
+            + (4 - job_satisfaction)
+            + (4 - env_satisfaction)
+            + CASE WHEN years_since_promo >= 5 THEN 2 WHEN years_since_promo >= 3 THEN 1 ELSE 0 END
+            + CASE WHEN job_involvement <= 2 THEN 1 ELSE 0 END
+        ) AS burnout_score
+    FROM hr_employees
+    WHERE attrition = 'No'   -- Focus on employees still HERE
+),
+pay_context AS (
+    SELECT
+        emp_hash,
+        ROUND(AVG(monthly_income) OVER (PARTITION BY job_role), 0) AS role_avg
+    FROM hr_employees
+)
+SELECT
+    b.emp_hash,
+    b.department,
+    b.job_role,
+    b.monthly_income,
+    p.role_avg               AS role_avg_income,
+    b.years_at_company,
+    b.burnout_score,
+    CASE
+        WHEN b.burnout_score >= 10 THEN 'IMMEDIATE INTERVENTION'
+        WHEN b.burnout_score >= 6  THEN 'SCHEDULE 1-ON-1'
+        ELSE 'MONITOR QUARTERLY'
+    END                      AS recommended_action,
+    b.overtime,
+    b.env_satisfaction,
+    b.job_satisfaction,
+    b.work_life_balance
+FROM burnout_computed b
+JOIN pay_context p ON b.emp_hash = p.emp_hash
+WHERE b.burnout_score >= 6   -- Only actionable cases
+ORDER BY b.burnout_score DESC, b.years_at_company DESC
+LIMIT 50;   -- Top 50 priority cases for HR Chief of Staff
